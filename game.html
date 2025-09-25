@@ -2,6 +2,9 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
   <title>Flappy Love ✈️❤️</title>
   <style>
     body {
@@ -121,6 +124,14 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); // inizializza subito le dimensioni
+
 let heartX = 80;
 let heartY = 300;
 let velocity = 0;
@@ -135,6 +146,18 @@ let score = 0;
 let gameOver = false;
 let gameStarted = false;
 let victory = false;
+
+// previene double-tap zoom
+document.addEventListener('touchstart', function(e){
+  if(e.touches.length > 1){
+    e.preventDefault();
+  }
+}, { passive: false });
+
+// previene pinch-to-zoom
+document.addEventListener('gesturestart', function(e){
+  e.preventDefault();
+});
 
 // ---------------- SFONDO ----------------
 const bg = new Image();
