@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Per te ❤️</title>
+  <style>
+    body {
+      margin: 0;
+      background: pink;
+      overflow: hidden;
+      height: 100vh;
+      position: relative;
+      font-family: Arial, sans-serif;
+    }
+
+    .heart {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: red;
+      transform: rotate(45deg);
+      animation: float 2s linear forwards;
+      z-index: 1; /* sotto il testo */
+    }
+    .heart::before,
+    .heart::after {
+      content: "";
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: red;
+      border-radius: 50%;
+    }
+    .heart::before { left: -15px; top: 0; }
+    .heart::after { top: -15px; left: 0; }
+
+    @keyframes float {
+      to {
+        transform: translateY(-300px) rotate(45deg);
+        opacity: 0;
+      }
+    }
+
+    /* Testo centrale */
+    #messageContainer {
+      position: absolute;
+      background: pink;
+      margin: 5px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+      z-index: 2; /* sopra i cuori */
+      pointer-events: none; /* i click passano ai cuori */
+      user-select: none;
+    }
+
+    #messageContainer h1 {
+      font-size: 36px;
+      margin: 0 0 10px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    #messageContainer p {
+      font-size: 18px;
+      margin: 0;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div id="messageContainer">
+    <h1>Questo è tutto il mio amore per te ❤️</h1>
+    <p>Clicca ovunque per far volare i cuori!</p>
+  </div>
+
+  <script>
+    document.addEventListener("click", e => {
+      let heart = document.createElement("div");
+      heart.className = "heart";
+
+      // Posiziona i cuori leggermente sotto il click, così non coprono il testo
+      heart.style.left = e.pageX + "px";
+      heart.style.top = e.pageY + "px";
+
+      document.body.appendChild(heart);
+
+      setTimeout(() => heart.remove(), 2000);
+    });
+  </script>
+</body>
+</html>

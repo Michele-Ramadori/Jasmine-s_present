@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Flappy Love ✈️❤️</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom, #ff9aa2, #ffc3a0);
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+    }
+    #startScreen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 10;
+      overflow: hidden;
+    }
+    #startScreen h1 {
+      font-size: 48px;
+      color: #e63946;
+      margin: 0;
+    }
+    #startScreen p {
+      font-size: 24px;
+      color: #6a4c93;
+      margin: 10px 0 30px 0;
+    }
+    #startButton {
+      font-size: 28px;
+      padding: 15px 30px;
+      background: #f1faee;
+      border: 2px solid #e63946;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 20;
+    }
+    #startButton:hover {
+      background: #e63946;
+      color: white;
+      transform: scale(1.05);
+    }
+    .heart {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: url('heart.png') no-repeat center center;
+      background-size: contain;
+    }
+
+    #gameOverScreen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); /* nero trasparente */
+    display: none; /* nascosto finché non serve */
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    }
+
+    #gameOverScreen .overlay-content {
+    text-align: center;
+    background: white;
+    padding: 30px 40px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    #gameOverScreen h2 {
+    margin: 0 0 20px 0;
+    font-size: 32px;
+    color: #e63946;
+    }
+
+    #restartButton {
+    font-size: 22px;
+    padding: 12px 25px;
+    background: #f1faee;
+    border: 2px solid #e63946;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    }
+
+    #restartButton:hover {
+    background: #e63946;
+    color: white;
+    transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<div id="startScreen">
+  <h1>Buon compleanno ❤️</h1>
+  <p>Clicca il bottone per iniziare il gioco!</p>
+  <button id="startButton">Inizia il gioco</button>
+</div>
+
+<div id="gameOverScreen">
+  <div class="overlay-content">
+    <h2>Game Over 💔</h2>
+    <button id="restartButton">Ricomincia</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let heartX = 80;
+let heartY = 300;
+let velocity = 0;
+const gravity = 0.3;
+const jump = -6;
+
+let pipes = [];
+const pipeWidth = 80;
+const gap = 250;
+let frame = 0;
+let score = 0;
+let gameOver = false;
+let gameStarted = false;
+let victory = false;
+
+// ---------------- SFONDO ----------------
+const bg = new Image();
+bg.src = "background.png"; // immagine 2400x640
+let bgX = 0;
+const bgSpeed = 1.2;
+
+function drawBackground() {
+  const scale = canvas.height / bg.height;   // scala verticale
+  const drawWidth = bg.width * scale;        // larghezza proporzionata
+  const drawHeight = canvas.height;          // altezza fissa come il canvas
+
+  ctx.drawImage(bg, bgX, 0, drawWidth, drawHeight);
+  ctx.drawImage(bg, bgX + drawWidth, 0, drawWidth, drawHeight);
+
+  bgX -= bgSpeed;
+  if (bgX <= -drawWidth) {
+    bgX = 0;
+  }
+}
+
+// ---------------- Cuoricini schermata start ----------------
+const startScreen = document.getElementById("startScreen");
+let hearts = [];
+
+for (let i = 0; i < 30; i++) {
+  hearts.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    size: 10 + Math.random() * 15,
+    speed: 0.5 + Math.random(),
+    element: null
+  });
+}
+
+hearts.forEach(h => {
+  const div = document.createElement('div');
+  div.classList.add('heart');
+  div.style.width = h.size + 'px';
+  div.style.height = h.size + 'px';
+  div.style.left = h.x + 'px';
+  div.style.top = h.y + 'px';
+  startScreen.appendChild(div);
+  h.element = div;
+});
+
+function animateHearts() {
+  hearts.forEach(h => {
+    h.y += h.speed;
+    if (h.y > window.innerHeight) h.y = -h.size;
+    h.element.style.top = h.y + 'px';
+  });
+  if (!gameStarted) requestAnimationFrame(animateHearts);
+}
+animateHearts();
+
+// interazione: scoppio cuoricini
+startScreen.addEventListener('mousemove', e => {
+  hearts.forEach((h, i) => {
+    const rect = h.element.getBoundingClientRect();
+    if (
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom
+    ) {
+      for (let j = 0; j < 3; j++) {
+        const mini = document.createElement('div');
+        mini.classList.add('heart');
+        mini.style.width = h.size/2 + 'px';
+        mini.style.height = h.size/2 + 'px';
+        mini.style.left = h.x + 'px';
+        mini.style.top = h.y + 'px';
+        startScreen.appendChild(mini);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 2 + 1;
+        let posY = h.y;
+        let posX = h.x;
+        const fall = () => {
+          posX += Math.cos(angle) * speed;
+          posY += Math.sin(angle) * speed;
+          mini.style.left = posX + 'px';
+          mini.style.top = posY + 'px';
+          if (posY < window.innerHeight) requestAnimationFrame(fall);
+          else mini.remove();
+        };
+        fall();
+      }
+      h.y = -h.size;
+    }
+  });
+});
+
+// ---------------- START ----------------
+function startGame() {
+  document.getElementById("startScreen").style.display = "none";
+  gameStarted = true;
+  gameLoop();
+}
+
+document.getElementById("startButton").addEventListener("click", startGame);
+document.addEventListener("keydown", () => { 
+  if (!gameStarted) startGame(); 
+  velocity = jump; 
+});
+document.addEventListener("click", () => { 
+  if (!gameStarted) startGame(); 
+  velocity = jump; 
+});
+
+// carica l'aereo
+const planeImg = new Image();
+planeImg.src = "plane.png";
+
+// carica grattaceli
+const buildingImgs = [
+  new Image(),
+  new Image(),
+  new Image()
+];
+buildingImgs[0].src = "building1.png";
+buildingImgs[1].src = "building2.png";
+buildingImgs[2].src = "building3.png";
+
+// GAP variabile
+const minGap = 200; // gap minimo
+const maxGap = 300; // gap massimo
+
+// carica ostacolo (nuvola)
+const obstacleImg = new Image();
+obstacleImg.src = "cloud.png";
+
+// disegna l'aereo
+function drawPlane(x, y, size) {
+  ctx.drawImage(planeImg, x - size/2, y - size/2, size, size);
+}
+
+// ---------------- LOOP PRINCIPALE ----------------
+function gameLoop() {
+  if (gameOver || victory) return;
+
+  // sfondo animato
+  drawBackground();
+
+  // movimento aereo
+  velocity += gravity;
+  if (velocity > 7) velocity = 7;
+  heartY += velocity;
+  drawPlane(heartX, heartY, 50);
+
+  // aggiungi ostacoli
+  if (frame % 150 === 0) {
+    const randomGap = minGap + Math.random() * (maxGap - minGap); // gap casuale tra 200 e 300
+    const topHeight = Math.random() * (canvas.height - randomGap - 100) + 50;
+    pipes.push({ 
+        x: canvas.width, 
+        top: topHeight, 
+        passed: false, 
+        gap: randomGap 
+    });
+  }
+
+
+  // muovi e disegna ostacoli
+  for (let i = 0; i < pipes.length; i++) {
+    pipes[i].x -= 1.5;
+
+    // disegna rettangoli verdi
+    ctx.fillStyle = "green";
+    ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+    ctx.fillRect(pipes[i].x, pipes[i].top + pipes[i].gap, pipeWidth, canvas.height);
+
+    // collisione
+    if (
+      heartX + 15 > pipes[i].x &&
+      heartX - 15 < pipes[i].x + pipeWidth &&
+      (heartY - 15 < pipes[i].top || heartY + 15 > pipes[i].top + pipes[i].gap)
+    ) {
+      gameOver = true;
+      document.getElementById("gameOverScreen").style.display = "flex";
+    }
+
+    if (!pipes[i].passed && heartX > pipes[i].x + pipeWidth) {
+      score++;
+      pipes[i].passed = true;
+    }
+  }
+
+  // punteggio
+  ctx.fillStyle = "black";
+  ctx.font = "30px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText("Score: " + score, 10, 40);
+
+  // vittoria
+  if (score >= 3) {
+    victory = true;
+    victoryScene();
+    return;
+  }
+
+  frame++;
+  requestAnimationFrame(gameLoop);
+}
+
+// ---------------- Scena finale ----------------
+function victoryScene() {
+  let planeX = heartX;
+  let planeY = heartY;
+  let exitBuffer = 80; // margine extra oltre lo schermo
+
+  function animateVictory() {
+    ctx.fillStyle = "#fce1f3"; // cielo rosa
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // scritta finale
+    ctx.fillStyle = "#e63946";
+    ctx.font = "40px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Per te ❤️", canvas.width / 2, canvas.height / 2);
+
+    // muovi aereo più lentamente
+    planeX += 1.5;  
+    drawPlane(planeX, planeY, 50);
+
+    // continua a volare finché non esce completamente
+    if (planeX < canvas.width + exitBuffer) {
+      requestAnimationFrame(animateVictory);
+    } else {
+      // resta un paio di secondi dopo l’uscita
+      setTimeout(() => window.location.href = "hearts.html", 2000);
+    }
+  }
+
+  animateVictory();
+}
+
+// ---------------- Restart ----------------
+document.getElementById("restartButton").addEventListener("click", () => {
+  location.reload();
+});
+</script>
+</body>
+</html>
